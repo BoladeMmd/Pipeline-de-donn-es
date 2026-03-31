@@ -1,1 +1,43 @@
+# dashboards.py
+import plotly.express as px
+
+def plot_indicator(df, indicateur, periodes):
+    data = df[
+        (df["Indicateur"] == indicateur) &
+        (df["Situation"].isin(["%_BONNE", "%_SATISFAISANTE", "%_DIFFICILE"]))
+    ][["Situation"] + periodes]
+
+    # Restructuration
+    data = data.set_index("Situation").T.reset_index()
+    data = data.rename(columns={"index": "Période"})
+
+    fig = px.bar(
+        data,
+        x="Période",
+        y=["%_BONNE", "%_SATISFAISANTE", "%_DIFFICILE"],
+        barmode="group",  #  GROUPÉ 
+        text_auto=True,  # affiche les % au-dessus
+        title=f"Indicateur {indicateur}",
+        color_discrete_map={
+            "%_BONNE": "green",
+            "%_SATISFAISANTE": "yellow",
+            "%_DIFFICILE": "red",
+        }
+    )
+
+    fig.update_layout(
+        yaxis_title="Pourcentage (%)",
+        xaxis_title="Période",
+        yaxis=dict(range=[0, 100]),
+        legend_title="Situation",
+        template="plotly_white"
+    )
+
+    fig.update_traces(
+        textposition="outside"
+    )
+
+    return fig
+
+
 
