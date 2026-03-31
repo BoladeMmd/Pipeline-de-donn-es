@@ -32,8 +32,10 @@ Ce projet présente un pipeline de données ETL pour automatiser le traitement d
 
 **Streamlit**: Visualisation interactive et interface utilisateur 
 
-# MISE EN OEUVRE DE LA SOLUTION 
-# 1- INSTALLATIONS ( Docker, docker compose, python 3.10+)
+**MISE EN OEUVRE DE LA SOLUTION** 
+**1- INSTALLATIONS** ( Docker, docker compose, python 3.10+) 
+**2- CREATION DE REPERTOIRE POUR AIRFLOW**
+ 
 
 
 
