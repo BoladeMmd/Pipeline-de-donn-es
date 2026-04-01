@@ -302,8 +302,10 @@ Note: Comme vous povez le constater sur l'immage , l'utilisateur charge un fichi
 
 
 
-**Auteur** : Boladé MAMADOU 
+**Auteur** : Boladé MAMADOU
+
 **Mail**: bolademamadou7@gmail.com 
+
 **Linkedin**: www.linkedin.com/in/boladé-mamadou-a1a91833a
 
 
