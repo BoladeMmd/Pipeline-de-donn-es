@@ -137,6 +137,13 @@ NB: Pour des raisions de confidentialité je ne pourrai pas mettre a disposition
 
 Merci pour la comprehension !!!
 
+```python
+def hello_world():
+    print("Hello, Airflow !")
+
+hello_world()
+```
+
 
 
 
