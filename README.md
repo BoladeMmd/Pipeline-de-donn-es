@@ -77,7 +77,174 @@ Le dossier logs centralise l’ensemble des journaux générés lors de l’exé
 Ce répertoire regroupe les fichiers de configuration du système, notamment les paramètres d’Airflow, les variables d’environnement et les éléments liés à la sécurité. 
 
 
-Une fois l'implementation des scripts terminée on se connecte a l'ui d'apache airflow et executer notre DAG
+Voici le code implementé pour notre DAG airflow 
+
+```python
+from datetime import datetime
+import sys
+import os
+
+
+
+from airflow import DAG
+from airflow.providers.standard.operators.python import PythonOperator
+
+# =============================
+# PYTHONPATH pour /scripts
+# =============================
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SCRIPTS_DIR = os.path.join(BASE_DIR, "scripts")
+sys.path.append(SCRIPTS_DIR)
+
+# =============================
+# Imports des scripts
+# =============================
+from ratios_to_scores import ratios_to_scores
+from scores_to_sap import scores_to_sap
+from sap_to_recap_scores import sap_to_recap_scores
+from recap_scores_to_situation import recap_scores_to_situation
+from situation_to_recap_trim import situation_to_recap_trim
+from excel_to_postgres import excel_to_postgres
+
+# =============================
+# DAG
+# =============================
+with DAG(
+    dag_id="pca_pipeline_complet",
+    description="Pipeline PCA : Ratios → Scores → SAP → Recap → Situation",
+    start_date=datetime(2024, 1, 1),
+    schedule=None,
+    catchup=False,
+    tags=["PCA", "SAP", "RECUP"],
+) as dag:
+
+    t1_ratios_to_scores = PythonOperator(
+        task_id="ratios_to_scores",
+        python_callable=ratios_to_scores,
+        op_kwargs={
+            "ratios_path": "/opt/airflow/data/input/ratios.xlsx",
+            "classification_path": "/opt/airflow/data/input/clasification.xlsx",
+            "output_path": "/opt/airflow/data/output/scores.xlsx",
+        },
+        do_xcom_push=False,
+    )
+
+    t2_scores_to_sap = PythonOperator(
+        task_id="scores_to_sap",
+        python_callable=scores_to_sap,
+        op_kwargs={
+            "scores_path": "/opt/airflow/data/output/scores.xlsx",
+            "ratios_path": "/opt/airflow/data/input/ratios.xlsx",
+            "output_path": "/opt/airflow/data/output/sap.xlsx",
+        },
+        do_xcom_push=False,
+    )
+
+    t3_sap_to_recap = PythonOperator(
+        task_id="sap_to_recap_scores",
+        python_callable=sap_to_recap_scores,
+        op_kwargs={
+            "scores_path": "/opt/airflow/data/output/scores.xlsx",
+            "output_path": "/opt/airflow/data/output/recap_scores.xlsx",
+        },
+        do_xcom_push=False,
+    )
+
+    t4_recap_to_situation = PythonOperator(
+        task_id="recap_scores_to_situation",
+        python_callable=recap_scores_to_situation,
+        op_kwargs={
+            "input_path": "/opt/airflow/data/output/recap_scores.xlsx",
+            "output_path": "/opt/airflow/data/output/situation.xlsx",
+        },
+        do_xcom_push=False,
+    )
+
+    t5_situation_to_recap_trim = PythonOperator(
+        task_id="situation_to_recap_trim",
+        python_callable=situation_to_recap_trim,
+        op_kwargs={
+            "situation_path": "/opt/airflow/data/output/situation.xlsx",
+            "output_path": "/opt/airflow/data/output/recap_trim.xlsx",
+        },
+        do_xcom_push=False,
+    )
+
+    # =============================
+    # Chargement PostgreSQL
+    # =============================
+    t_load_scores = PythonOperator(
+        task_id="load_scores_to_db",
+        python_callable=excel_to_postgres,
+        op_kwargs={
+            "excel_path": "/opt/airflow/data/output/scores.xlsx",
+            "table_name": "scores",
+        },
+        do_xcom_push=False,
+    )
+
+    t_load_sap = PythonOperator(
+        task_id="load_sap_to_db",
+        python_callable=excel_to_postgres,
+        op_kwargs={
+            "excel_path": "/opt/airflow/data/output/sap.xlsx",
+            "table_name": "sap",
+        },
+        do_xcom_push=False,
+    )
+
+    t_load_recap_scores = PythonOperator(
+        task_id="load_recap_scores_to_db",
+        python_callable=excel_to_postgres,
+        op_kwargs={
+            "excel_path": "/opt/airflow/data/output/recap_scores.xlsx",
+            "table_name": "recap_scores",
+        },
+        do_xcom_push=False,
+    )
+
+    t_load_situation = PythonOperator(
+        task_id="load_situation_to_db",
+        python_callable=excel_to_postgres,
+        op_kwargs={
+            "excel_path": "/opt/airflow/data/output/situation.xlsx",
+            "table_name": "situation",
+        },
+        do_xcom_push=False,
+    )
+
+    t_load_recap_trim = PythonOperator(
+        task_id="load_recap_trim_to_db",
+        python_callable=excel_to_postgres,
+        op_kwargs={
+            "excel_path": "/opt/airflow/data/output/recap_trim.xlsx",
+            "table_name": "recap_trim",
+        },
+        do_xcom_push=False,
+    )
+
+    # =============================
+    # Dépendances
+    # =============================
+    (
+        t1_ratios_to_scores
+        >> t2_scores_to_sap
+        >> t3_sap_to_recap
+        >> t4_recap_to_situation
+        >> t5_situation_to_recap_trim
+        >> t_load_scores
+        >> t_load_sap
+        >> t_load_recap_scores
+        >> t_load_situation
+        >> t_load_recap_trim
+    )
+
+```
+
+**Note** : Les "task_id" represente les differents scripts implémentés pour chaque tache a effectué. Par exemple la tache **"situation_to_recap_trim"** assure la transformation de la table **"situation"** en **"recap_trim"** en fonction des **règles métiers**. Pour des raisions de confidentialité ces scripts ne seront pas publiés.
+
+
+Une fois l'implementation des scripts terminée on se connecte a l'UI d'apache airflow et executer notre DAG
 
 **Commande pour demarrer les services airflow** 
 
