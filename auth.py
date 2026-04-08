@@ -1,3 +1,4 @@
+# FONCTION D'AUTHENTIFICATION POUR SE CONNECTER A LA PLATEFORME
 import streamlit as st
 
 def set_background(image_url):
