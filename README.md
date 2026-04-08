@@ -46,6 +46,8 @@ Ce projet présente un pipeline de données ETL pour automatiser le traitement d
 -Une distribution linux sous windows comme environnement de travail (Ubuntu, WSL2, etc...).
 
 **2- CREATION DES REPERTOIRES POUR AIRFLOW**
+
+
 <img width="301" height="350" alt="WORKSPACE" src="https://github.com/user-attachments/assets/081ead6b-4fae-4dfa-818a-eca20c71a4b0" />
 
 L’espace de travail est constitué d’un repertoire principal Airflow-docker contenant plusieurs sous repertoires. Cette organisation favorise une meilleure lisibilité du pipeline automatisé, une traçabilité complète des traitements ainsi qu’une évolutivité de la solution. Chaque composant peut être modifié ou amélioré indépendamment des autres, sans impacter l’ensemble du système.
